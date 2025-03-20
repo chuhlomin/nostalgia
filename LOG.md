@@ -17,3 +17,5 @@ Because "Autoplay is only allowed when approved by the user, the site is activat
 [x] Add АЛАДДИН subtitles
 
 [x] Fix subtutles highlighting when line consist of one word
+
+[x] Generate menu automatically based on local directory: channels.go

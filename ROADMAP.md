@@ -1,8 +1,9 @@
 # ROADMAP
 
+[ ] Render menu on canvas
 [ ] Show subtitles in shadered mode
 [ ] Fix А МОЖЕТ subtitles (timings for ГАВ, Ё)
-[ ] Vendor html2canvas
+[ ] Vendor html2canvas or avoid it
 
 [ ] (Homework) Discover how VHS menus looked like
 [ ] (Optionally) Show video + audio + vtt size on page with selection
@@ -13,7 +14,6 @@
 [ ] Animate subtitles fill in Karaoke mode
 
 [ ] Write minimalistic pack.go to pack the resources
-[ ] Generate menu automatically based on local directory
 [ ] Avoid errors in console
 
 [ ] Toggle between subtitles (T hotkey) and Karaoke mode (K hotkey)

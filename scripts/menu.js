@@ -19,32 +19,6 @@ export const menuStructure = {
       { label: "INFO", action: "navigate", target: "info" },
     ],
   },
-  channels: {
-    header: "----- CHANNEL LIST -----",
-    items: [
-      {
-        label: "Cartoons",
-        action: "navigate",
-        target: "cartoons",
-      },
-      {
-        label: "Movies",
-        action: "navigate",
-        target: "movies",
-      },
-      {
-        label: "Shows",
-        action: "navigate",
-        target: "shows",
-      },
-      {
-        label: "Ads",
-        action: "navigate",
-        target: "ads",
-      },
-      { label: "BACK", action: "navigate", target: "main" },
-    ],
-  },
   options: {
     header: "------- OPTIONS --------",
     items: [
@@ -92,73 +66,57 @@ export const menuStructure = {
       { label: "BACK", action: "navigate", target: "main" },
     ],
   },
+  // CHANNELS BEGIN
+  channels: {
+    header: "------- CHANNELS -------",
+    items: [
+      {
+        label: "CARTOONS",
+        action: "navigate",
+        target: "cartoons",
+      },
+      {
+        label: "BACK",
+        action: "navigate",
+        target: "main",
+      },
+    ],
+  },
   cartoons: {
     header: "------- CARTOONS -------",
     items: [
       {
-        label: "А МОЖЕТ",
+        label: "Аладдин",
         action: "play",
-        path: "А может.mp4",
+        video: "Аладдин.mp4",
+        audio: "Аладдин_audio.mp4",
+        subtitles: "Аладдин.vtt",
       },
-      // {
-      //   label: "ЧЁРНЫЙ ПЛАЩ",
-      //   action: "play",
-      //   path: "Чёрный плащ.mp4",
-      // },
-      // {
-      //   label: "ГОМАНДА ГУФИ",
-      //   action: "none",
-      // },
       {
-        label: "АЛАДДИН",
+        label: "Команда Гуфи",
         action: "play",
-        path: "Аладдин.mp4",
+        video: "Команда Гуфи.mp4",
       },
-      { label: "BACK", action: "navigate", target: "channels" },
+      {
+        label: "Чёрный плащ",
+        action: "play",
+        video: "Чёрный плащ.mp4",
+        audio: "Чёрный плащ_audio.mp4",
+      },
+      {
+        label: "А может",
+        action: "play",
+        video: "А может.mp4",
+        subtitles: "А может.vtt",
+      },
+      {
+        label: "BACK",
+        action: "navigate",
+        target: "channels",
+      },
     ],
   },
-  movies: {
-    header: "-------- MOVIES --------",
-    items: [
-      {
-        label: "МЭРИ ПОППИНС",
-        action: "none",
-      },
-      {
-        label: "ШЕРЛОК ХОЛМС",
-        action: "none",
-      },
-      { label: "BACK", action: "navigate", target: "channels" },
-    ],
-  },
-  shows: {
-    header: "-------- SHOWS ---------",
-    items: [
-      {
-        label: "ГОРОДОК",
-        action: "none",
-      },
-      {
-        label: "БОЛЬШАЯ РАЗНИЦА",
-        action: "none",
-      },
-      {
-        label: "ЗОВ ДЖУНГЛЕЙ",
-        action: "none",
-      },
-      { label: "BACK", action: "navigate", target: "channels" },
-    ],
-  },
-  ads: {
-    header: "--------- ADS ----------",
-    items: [
-      {
-        label: "ЗОЛОТАЯ ЧАША",
-        action: "none",
-      },
-      { label: "BACK", action: "navigate", target: "channels" },
-    ],
-  },
+  // CHANNELS END
 };
 
 // Menu state
@@ -225,7 +183,7 @@ export function handleMenuAction(item, fromUrl = false) {
     case "play":
       // First, make sure to exit any currently playing video
       exitVideo();
-      playVideo(`${currentMenu}/${item.path}`, item.label, fromUrl);
+      playVideo(`channels/${currentMenu}/${item.video}`, item.label, fromUrl);
       break;
     case "none":
       // Do nothing for informational items
