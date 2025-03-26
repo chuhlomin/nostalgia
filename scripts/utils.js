@@ -2,7 +2,7 @@ import {
   currentMenu,
   selectedIndex,
   menuStructure,
-  renderMenu,
+  renderState,
 } from "./menu.js";
 
 // Function to toggle fullscreen
@@ -59,7 +59,7 @@ export function toggleFullScreen() {
 
   // if current screen is options, re-render to update fullscreen option
   if (currentMenu === "options") {
-    renderMenu(currentMenu);
+    renderState(currentMenu);
   }
 }
 

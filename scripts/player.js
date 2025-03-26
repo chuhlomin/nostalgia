@@ -1,4 +1,5 @@
 import { updateMenuPath } from "./utils.js";
+import { renderState } from "./menu.js";
 
 // Function to handle video playback
 export function playVideo(videoPath, videoTitle, fromUrl = false) {
@@ -10,13 +11,12 @@ export function playVideo(videoPath, videoTitle, fromUrl = false) {
   const subtitlesPath = videoPath.replace(".mp4", ".vtt");
 
   videoContainer.innerHTML = `
-    <div class="video-wrapper">
+    <div id="video-container" class="video-wrapper">
       <video id="video-player">
         <source src="${videoPath}" type="video/mp4">
         <track id="subtitles-track" kind="subtitles" src="${subtitlesPath}" srclang="ru" label="Russian" default>
         Your browser does not support the video tag.
       </video>
-      <div id="custom-subtitles-container"></div>
     </div>
     <audio id="audio-player" style="display: none;">
       <source src="${audioPath}" type="audio/mp4">
@@ -29,9 +29,6 @@ export function playVideo(videoPath, videoTitle, fromUrl = false) {
   const videoPlayer = document.getElementById("video-player");
   const audioPlayer = document.getElementById("audio-player");
   const subtitlesTrack = document.getElementById("subtitles-track");
-  const customSubtitlesContainer = document.getElementById(
-    "custom-subtitles-container",
-  );
 
   // Auto focus the video for keyboard controls
   videoPlayer.focus();
@@ -75,20 +72,12 @@ export function playVideo(videoPath, videoTitle, fromUrl = false) {
   // Set up custom subtitles display
   if (subtitlesTrack) {
     videoPlayer.addEventListener("timeupdate", () => {
-      updateCustomSubtitles(
-        videoPlayer,
-        subtitlesTrack,
-        customSubtitlesContainer,
-      );
+      updateCustomSubtitles(videoPlayer, subtitlesTrack);
     });
 
     // Also update on cuechange events
     subtitlesTrack.track.addEventListener("cuechange", () => {
-      updateCustomSubtitles(
-        videoPlayer,
-        subtitlesTrack,
-        customSubtitlesContainer,
-      );
+      updateCustomSubtitles(videoPlayer, subtitlesTrack);
     });
 
     // Load subtitles and handle errors gracefully
@@ -103,6 +92,13 @@ export function playVideo(videoPath, videoTitle, fromUrl = false) {
 
   if (!fromUrl) {
     videoPlayer.play();
+  } else {
+    // wait for the video to load, then request a texture update
+    videoPlayer.addEventListener("loadeddata", () => {
+      if (window.requestTextureUpdate) {
+        window.requestTextureUpdate();
+      }
+    });
   }
 
   // Add event listener for the Escape key to exit video
@@ -135,8 +131,8 @@ export function playVideo(videoPath, videoTitle, fromUrl = false) {
 }
 
 // Function to update custom subtitles display
-export function updateCustomSubtitles(videoPlayer, subtitlesTrack, container) {
-  if (!subtitlesTrack || !subtitlesTrack.track || !container) return;
+export function updateCustomSubtitles(videoPlayer, subtitlesTrack) {
+  if (!subtitlesTrack || !subtitlesTrack.track) return;
 
   const track = subtitlesTrack.track;
 
@@ -150,27 +146,31 @@ export function updateCustomSubtitles(videoPlayer, subtitlesTrack, container) {
     const cue = track.activeCues[0];
     const currentTime = videoPlayer.currentTime;
 
+    // subtitles are split into lines
+    // each line is a list of words with time codes
+    let result = [];
+
     // Check if the text contains time codes in the format <00:00.000>
     if (cue.text.includes("<") && cue.text.includes(">")) {
       // Parse the text with time codes
       const lines = cue.text.split("\n");
-      let formattedText = "";
 
       // Process each line separately to maintain line breaks
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
+        let lineData = [];
 
         // Process timestamped words in the line
         if (line.includes("<") && line.includes(">")) {
-          // Extract all pairs of text and their timestamps
-          const regex = /<(\d{2}:\d{2}\.\d{3})>/g;
-          const timestamps = [];
+          // Match all timestamps and the text between them
+          const regex = /<(\d{2}:\d{2}\.\d{3})>([^<]*)/g;
+          let matches = [];
           let match;
 
-          // Find all timestamps in the line
+          // Find all timestamp-text pairs
           while ((match = regex.exec(line)) !== null) {
             const timeCode = match[1];
-            const timePosition = match.index;
+            const text = match[2].trim();
 
             // Convert time code to seconds
             let timeInSeconds;
@@ -190,83 +190,54 @@ export function updateCustomSubtitles(videoPlayer, subtitlesTrack, container) {
               timeInSeconds = parseFloat(timeCode);
             }
 
-            timestamps.push({ position: timePosition, time: timeInSeconds });
+            matches.push({ time: timeInSeconds, text: text });
           }
 
-          // Split content by timestamps
-          const parts = line.split(/<\d{2}:\d{2}\.\d{3}>/);
-          let lineFormattedText = "";
-
-          // Handle the first part (before any timestamp) - activate based on cue start time
-          if (parts[0]) {
-            const isFirstPartActive =
-              i === 0
-                ? currentTime >= cue.startTime
-                : currentTime >= timestamps[0].time;
-            lineFormattedText += isFirstPartActive
-              ? `<span class="active-word">${parts[0]}</span>`
-              : `<span>${parts[0]}</span>`;
-          }
-
-          // Process each part with its associated timestamp
-          for (let j = 1; j < parts.length; j++) {
-            const timestampIndex = j - 1;
-            const isActive = currentTime >= timestamps[timestampIndex].time;
-
-            if (isActive) {
-              lineFormattedText += `<span class="active-word">${parts[j]}</span>`;
-            } else {
-              lineFormattedText += `<span>${parts[j]}</span>`;
+          // Process each word with its timestamp
+          for (let j = 0; j < matches.length; j++) {
+            // Only add non-empty text
+            if (matches[j].text) {
+              lineData.push({
+                text: matches[j].text,
+                from: matches[j].time,
+                to: j < matches.length - 1 ? matches[j + 1].time : cue.endTime,
+              });
             }
           }
 
-          formattedText += lineFormattedText;
+          // Handle the case where the line starts with text before any timestamp
+          const firstTimestampPos = line.indexOf("<");
+          if (firstTimestampPos > 0) {
+            const initialText = line.substring(0, firstTimestampPos).trim();
+            if (initialText) {
+              lineData.unshift({
+                text: initialText,
+                from: cue.startTime,
+                to: matches.length > 0 ? matches[0].time : cue.endTime,
+              });
+            }
+          }
         } else {
           // Regular line without timestamps
-          formattedText += `<span>${line}</span>`;
+          lineData.push({
+            text: line.trim(),
+            from: cue.startTime,
+            to: cue.endTime,
+          });
         }
 
-        // Add a line break if this isn't the last line
-        if (i < lines.length - 1) {
-          formattedText += "<br> ";
+        // Only add the line if it has content
+        if (lineData.length > 0) {
+          result.push(lineData);
         }
       }
-
-      container.innerHTML = formattedText;
-      window.setVideoSubtitle(
-        formattedText
-          .replace(/<br>/g, "\n")
-          .replace(/<[^>]*>/g, "")
-          .replace(/\s+/g, " "),
-      );
-      return;
     }
 
-    // Handle regular subtitles without time codes
-    const isActive = currentTime >= cue.startTime;
-    let formattedText = cue.text
-      .split("\n")
-      .map((line) =>
-        isActive
-          ? `<span class="active-word">${line}</span>`
-          : `<span>${line}</span>`,
-      )
-      .join("<br> ");
-
-    container.innerHTML = formattedText;
-    window.setVideoSubtitle(
-      formattedText
-        .replace(/<br>/g, "\n")
-        .replace(/<[^>]*>/g, "")
-        .replace(/\s+/g, " "),
-    );
-    container.style.display = "block";
+    window.setVideoSubtitle(result);
     return;
   }
 
-  container.innerHTML = "";
-  container.style.display = "none";
-  window.setVideoSubtitle("");
+  window.setVideoSubtitle([]);
 }
 
 // Function to exit video playback
@@ -274,9 +245,6 @@ export function exitVideo() {
   const videoContainer = document.getElementById("video-container");
   const videoPlayer = document.getElementById("video-player");
   const audioPlayer = document.getElementById("audio-player");
-  const customSubtitlesContainer = document.getElementById(
-    "custom-subtitles-container",
-  );
 
   // Stop video and audio if they exist
   if (videoPlayer) videoPlayer.pause();
@@ -289,7 +257,7 @@ export function exitVideo() {
   }
 
   // Clear any subtitle event listeners
-  if (videoPlayer && customSubtitlesContainer) {
+  if (videoPlayer) {
     videoPlayer.removeEventListener("timeupdate", updateCustomSubtitles);
   }
 
@@ -299,6 +267,8 @@ export function exitVideo() {
 
   // Update URL to remove video
   updateMenuPath();
+
+  renderState();
 
   // Request texture update
   if (window.requestTextureUpdate) {

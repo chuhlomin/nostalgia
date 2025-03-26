@@ -37,7 +37,7 @@ export const menuStructure = {
             window.toggleVHSShader(true);
           }
 
-          renderMenu(currentMenu);
+          renderMenuState(currentMenu);
         },
       },
       {
@@ -51,7 +51,7 @@ export const menuStructure = {
           } else {
             item.label = "FULLSCREEN: ON";
           }
-          renderMenu(currentMenu);
+          renderMenuState(currentMenu);
         },
       },
       { label: "BACK", action: "navigate", target: "main" },
@@ -63,6 +63,7 @@ export const menuStructure = {
       { label: "NOSTALGIA PLAYER", action: "none" },
       { label: "VERSION: 1.0", action: "none" },
       { label: "FONT - HOME VIDEO 0.8", action: "none" },
+      // https://ggbot.itch.io/home-video-font
       { label: "BACK", action: "navigate", target: "main" },
     ],
   },
@@ -119,40 +120,103 @@ export const menuStructure = {
   // CHANNELS END
 };
 
+const STATES = {
+  MENU: "menu",
+  VIDEO: "video",
+};
+
 // Menu state
+export let currentState = STATES.MENU;
 export let currentMenu = "main";
 export let selectedIndex = 0;
 export let menuHistory = {}; // Store selected indices for each menu
 
-// Function to render the current menu
-export function renderMenu(menuName) {
-  const menu = menuStructure[menuName];
-  const headerElement = document.getElementById("screen-header");
-  const menuItemsElement = document.getElementById("menu-items");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+let fontSize = 24; // Base font size that will be scaled
 
-  // Update header
-  headerElement.textContent = menu.header;
+export function setupCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  renderState();
 
-  // Clear menu items
-  menuItemsElement.innerHTML = "";
-
-  // Add menu items
-  menu.items.forEach((item, index) => {
-    const menuItem = document.createElement("div");
-    menuItem.classList.add("menu-item");
-    menuItem.textContent = item.label;
-
-    if (index === selectedIndex) {
-      menuItem.classList.add("selected");
-    }
-
-    menuItem.addEventListener("click", () => {
-      selectedIndex = index;
-      handleMenuAction(item);
-    });
-
-    menuItemsElement.appendChild(menuItem);
+  window.addEventListener("resize", () => {
+    console.log("resize");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    renderState();
   });
+}
+
+export function renderState() {
+  ctx.fillStyle = "black";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  switch (currentState) {
+    case STATES.MENU:
+      renderMenuState(currentMenu);
+      break;
+    // todo: add video state
+  }
+}
+
+function calculateScaling() {
+  // Calculate scaling based on screen size
+  const baseWidth = 600; // Reference width
+  const scale = Math.min(
+    canvas.width / baseWidth,
+    canvas.height / (baseWidth * 0.6667), // 3:2 aspect ratio
+  );
+  fontSize = Math.floor(24 * scale);
+  return scale;
+}
+
+function drawText(text, x, y, options = {}) {
+  ctx.fillStyle = "white";
+
+  if (options.isSelected) {
+    // draw white block behind the text
+    const measures = ctx.measureText(text);
+    ctx.fillRect(
+      x,
+      y - measures.actualBoundingBoxAscent - fontSize * 0.1,
+      measures.width,
+      measures.actualBoundingBoxAscent + fontSize * 0.1 * 2,
+    );
+    ctx.fillStyle = "#0a0093";
+  }
+
+  ctx.font = `${fontSize}px "Home Video"`;
+  ctx.textAlign = options.align || "left";
+  ctx.fillText(text, x, y);
+}
+
+// Function to render the current menu
+function renderMenuState(menuName) {
+  const menu = menuStructure[menuName];
+  calculateScaling();
+
+  // Calculate positions
+  const headerY = fontSize * 2;
+  const menuStartY = headerY + fontSize;
+  const menuItemSpacing = fontSize;
+  const helpTextY = canvas.height - fontSize;
+
+  // fill whole canvas with #0a0093 color
+  ctx.fillStyle = "#0a0093";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  drawText(menu.header, canvas.width / 2, headerY, { align: "center" });
+
+  const width = ctx.measureText(menu.header).width;
+  const x = canvas.width / 2 - width / 2;
+
+  menu.items.forEach((item, index) => {
+    const y = menuStartY + index * menuItemSpacing;
+    drawText(item.label, x, y, { isSelected: index === selectedIndex });
+  });
+
+  drawText("SELECT ▲ ▼ | ENTER ▶", x, helpTextY);
 
   if (window.requestTextureUpdate) {
     window.requestTextureUpdate();
@@ -171,7 +235,7 @@ export function handleMenuAction(item, fromUrl = false) {
 
       // Restore selection from history or default to 0
       selectedIndex = menuHistory[currentMenu] || 0;
-      renderMenu(currentMenu);
+      renderMenuState(currentMenu);
       updateMenuPath();
       break;
     case "function":
@@ -244,7 +308,7 @@ export function parseUrlAndNavigate() {
       }
 
       // Render the current menu
-      renderMenu(currentMenu);
+      renderMenuState(currentMenu);
 
       // If we found a video, play it
       if (potentialVideoName) {
@@ -263,22 +327,22 @@ export function parseUrlAndNavigate() {
       // If path is invalid, just render main menu
       currentMenu = "main";
       selectedIndex = 0;
-      renderMenu(currentMenu);
+      renderMenuState(currentMenu);
     }
   } else {
     // Render the current menu (defaults to main if URL parsing failed)
-    renderMenu(currentMenu);
+    renderMenuState(currentMenu);
   }
 }
 
 // Handle keyboard navigation
 export function setupKeyboardNavigation() {
   document.addEventListener("keydown", (event) => {
-    // If video is playing and Escape is pressed, exit the video
+    // If video is playing and Escape or Q is pressed, exit the video
     const videoContainer = document.getElementById("video-container");
     if (
       videoContainer.classList.contains("fullscreen-video") &&
-      event.key === "Escape"
+      (event.key === "Escape" || event.key === "q")
     ) {
       // This will be handled by the specific video escape handler
       return;
@@ -314,7 +378,7 @@ export function setupKeyboardNavigation() {
           localStorage.setItem("shadersEnabled", newState.toString());
 
           if (currentMenu === "options") {
-            renderMenu(currentMenu);
+            renderMenuState(currentMenu);
           }
           // Apply the new shader state
           window.toggleVHSShader(newState);
@@ -336,7 +400,7 @@ export function setupKeyboardNavigation() {
 
         selectedIndex =
           (selectedIndex - 1 + menu.items.length) % menu.items.length;
-        renderMenu(currentMenu);
+        renderMenuState(currentMenu);
         break;
       case "ArrowDown":
         // if video is playing, handle up and down keys for volume control
@@ -352,7 +416,7 @@ export function setupKeyboardNavigation() {
           return;
         }
         selectedIndex = (selectedIndex + 1) % menu.items.length;
-        renderMenu(currentMenu);
+        renderMenuState(currentMenu);
         break;
       case "ArrowLeft":
         // if video is playing, handle left and right keys for seeking
@@ -390,7 +454,7 @@ export function setupKeyboardNavigation() {
           // Navigate to previous menu and restore selection
           currentMenu = previousMenu;
           selectedIndex = menuHistory[currentMenu] || 0;
-          renderMenu(currentMenu);
+          renderMenuState(currentMenu);
           updateMenuPath();
         }
         break;

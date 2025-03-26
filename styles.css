@@ -1,8 +1,9 @@
 @font-face {
-    font-family: "HomeVideo";
+    font-family: "Home Video";
     src:
         url("./fonts/HomeVideo-Regular.woff2") format("woff2"),
-        url("./fonts/HomeVideo-Regular.woff") format("woff");
+        url("./fonts/HomeVideo-Regular.woff") format("woff"),
+        url("./fonts/HomeVideo-Regular.ttf") format("truetype");
     font-weight: normal;
     font-style: normal;
 }
@@ -16,7 +17,7 @@
 body {
     background-color: #0a0093;
     color: #cbcbcb;
-    font-family: "HomeVideo", "Courier New", monospace;
+    font-family: "Home Video", "Courier New", monospace;
     font-size: min(4vw, 10vh);
     overflow: hidden;
     height: 100vh;
@@ -35,9 +36,19 @@ body {
     width: 100%;
 }
 
-#wrapper {
-    max-width: 26ch;
-    margin: 0 auto;
+#canvas {
+    width: 100%;
+    height: 100%;
+}
+
+#vhs-effect {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1000;
 }
 
 .header {
@@ -69,45 +80,18 @@ body {
     margin-top: min(4vw, 10vh);
 }
 
-.video-wrapper {
-    position: relative;
-    width: 100%;
-    height: 100%;
-}
-
-.fullscreen-video {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: black;
-    z-index: 1000;
-}
-
-.fullscreen-video video {
-    width: 100%;
-    height: 100%;
-    object-fit: fill;
-    outline: none;
+#video-container {
+    display: none;
 }
 
 video::cue {
-    font-family: "HomeVideo", "Courier New", monospace;
+    font-family: "Home Video", "Courier New", monospace;
     font-size: 1rem;
     color: white;
 }
 
 ::cue {
     visibility: hidden;
-}
-
-:past {
-    color: yellow;
-}
-
-:future {
-    color: red;
 }
 
 #custom-subtitles-container {
