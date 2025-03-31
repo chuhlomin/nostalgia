@@ -231,7 +231,7 @@ function setupSubtitleSystem(canvas, context) {
 
     // todo: scale based on max line width
     let fontSize = Math.min(
-      (3 * window.innerWidth) / 100,
+      (2.75 * window.innerWidth) / 100,
       (8 * window.innerHeight) / 100,
     );
 
@@ -372,8 +372,8 @@ uniform sampler2D subtitleChannel;
 void main() {
   float warp = 0.25; // simulate curvature of CRT monitor
   float scan = 0.50; // simulate darkness between scanlines
-  float cornerRadius = 0.025; // controls how rounded the corners appear
-  float padding = 0.0125; // add padding around the screen
+  float cornerRadius = 0.03; // controls how rounded the corners appear
+  float padding = 0.015; // add padding around the screen
 
   vec2 fragCoord = vUv * iResolution;
   vec2 uv = fragCoord / iResolution.xy;
