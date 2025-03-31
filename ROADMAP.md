@@ -1,9 +1,6 @@
 # ROADMAP
 
-[ ] Render menu on canvas
-[ ] Show subtitles in shadered mode
 [ ] Fix А МОЖЕТ subtitles (timings for ГАВ, Ё)
-[ ] Vendor html2canvas or avoid it
 
 [ ] (Homework) Discover how VHS menus looked like
 [ ] (Optionally) Show video + audio + vtt size on page with selection
@@ -18,4 +15,6 @@
 
 [ ] Toggle between subtitles (T hotkey) and Karaoke mode (K hotkey)
 [ ] Add pause screen (maybe more distortion to similare VHS Cassette effect, and show time info)
-[ ] Copy link to video with timestamp
+
+[-] Copy link to video with timestamp
+[ ] Create Electron version of the app – VHS Player

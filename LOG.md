@@ -19,3 +19,7 @@ Because "Autoplay is only allowed when approved by the user, the site is activat
 [x] Fix subtutles highlighting when line consist of one word
 
 [x] Generate menu automatically based on local directory: channels.go
+
+[x] Render menu on canvas
+[x] Show subtitles in shadered mode
+[x] Vendor html2canvas or avoid it
