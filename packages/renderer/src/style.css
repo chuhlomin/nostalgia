@@ -1,11 +1,21 @@
+:root {
+  font-family: 'Home Video', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-weight: 400;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 @font-face {
-    font-family: "Home Video";
-    src:
-        url("./fonts/HomeVideo-Regular.woff2") format("woff2"),
-        url("./fonts/HomeVideo-Regular.woff") format("woff"),
-        url("./fonts/HomeVideo-Regular.ttf") format("truetype");
-    font-weight: normal;
-    font-style: normal;
+  font-family: "Home Video";
+  src:
+      url("/fonts/HomeVideo-Regular.woff2") format("woff2"),
+      url("/fonts/HomeVideo-Regular.woff") format("woff"),
+      url("/fonts/HomeVideo-Regular.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
 }
 
 * {

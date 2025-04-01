@@ -1,9 +1,9 @@
 // Set up WebGL shader for VHS effect
 const canvas = document.getElementById("vhs-effect");
+const gl = initializeWebGL(canvas);
+
 const captureCanvas = document.getElementById("canvas");
 const captureContext = captureCanvas.getContext("2d");
-
-const gl = initializeWebGL(canvas);
 
 let texture;
 let needsTextureUpdate = true;

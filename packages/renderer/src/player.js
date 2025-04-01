@@ -7,8 +7,14 @@ export function playVideo(videoPath, videoTitle, fromUrl = false) {
 
   // Create video and audio elements
   // const audioPath = videoPath.replace(".mp4", "_audio.mp4");
-  const audioPath = videoPath.replace(".mp4", "_audio.mp4");
-  const subtitlesPath = videoPath.replace(".mp4", ".vtt");
+
+  // const audioPath = videoPath.replace(".mp4", "_audio.mp4");
+  // const subtitlesPath = videoPath.replace(".mp4", ".vtt");
+
+  const audioPath = "";
+  const subtitlesPath = "";
+
+  videoPath = "vhs://" + videoPath;
 
   videoContainer.innerHTML = `
     <div id="video-container" class="video-wrapper">
@@ -83,10 +89,6 @@ export function playVideo(videoPath, videoTitle, fromUrl = false) {
     // Load subtitles and handle errors gracefully
     subtitlesTrack.addEventListener("error", (e) => {
       console.log("Subtitles not available:", e);
-      // Clear error message after a moment
-      setTimeout(() => {
-        customSubtitlesContainer.textContent = "";
-      }, 3000);
     });
   }
 
