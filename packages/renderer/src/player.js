@@ -5,75 +5,42 @@ import { renderState } from "./menu.js";
 export function playVideo(videoPath, videoTitle, fromUrl = false) {
   const videoContainer = document.getElementById("video-container");
 
-  // Create video and audio elements
-  // const audioPath = videoPath.replace(".mp4", "_audio.mp4");
-
-  // const audioPath = videoPath.replace(".mp4", "_audio.mp4");
   // const subtitlesPath = videoPath.replace(".mp4", ".vtt");
-
-  const audioPath = "";
   const subtitlesPath = "";
 
   videoPath = "vhs://" + videoPath;
+  console.log("Video path:", videoPath);
 
   videoContainer.innerHTML = `
-    <div id="video-container" class="video-wrapper">
-      <video id="video-player">
-        <source src="${videoPath}" type="video/mp4">
-        <track id="subtitles-track" kind="subtitles" src="${subtitlesPath}" srclang="ru" label="Russian" default>
-        Your browser does not support the video tag.
-      </video>
-    </div>
-    <audio id="audio-player" style="display: none;">
-      <source src="${audioPath}" type="audio/mp4">
-    </audio>
+    <video id="video-player">
+      <source src="${videoPath}" type="video/mp4">
+      <track id="subtitles-track" kind="subtitles" src="${subtitlesPath}" srclang="ru" label="Russian" default>
+      Your browser does not support the video tag.
+    </video>
   `;
   // Add fullscreen class to video container
   videoContainer.classList.add("fullscreen-video");
 
-  // Set up video player controls
   const videoPlayer = document.getElementById("video-player");
-  const audioPlayer = document.getElementById("audio-player");
   const subtitlesTrack = document.getElementById("subtitles-track");
+
+  videoPlayer.addEventListener("error", (e) => {
+    console.error("Video Element Error:", e);
+    // Log detailed error information if available
+    if (videoPlayer.error) {
+      console.error("MediaError Code:", videoPlayer.error.code);
+      console.error("MediaError Message:", videoPlayer.error.message);
+    } else {
+      console.error("No MediaError object available.");
+    }
+    // Optionally, try to display an error to the user
+    // exitVideo(); // Maybe exit on error?
+  });
 
   // Auto focus the video for keyboard controls
   videoPlayer.focus();
 
-  // Mute video player by default
-  videoPlayer.muted = true;
-
-  // Add event listener for video ended
   videoPlayer.addEventListener("ended", exitVideo);
-
-  // Set up error handling for audio
-  audioPlayer.querySelector("source").addEventListener("error", (err) => {
-    console.log("Audio playback error - falling back to video audio", err);
-    videoPlayer.muted = false;
-    if (audioPlayer) audioPlayer.remove();
-  });
-  audioPlayer.load();
-
-  // Try to play audio when video plays
-  videoPlayer.addEventListener("play", () => {
-    audioPlayer.currentTime = videoPlayer.currentTime;
-    const audioPromise = audioPlayer.play();
-
-    if (audioPromise !== undefined) {
-      audioPromise.catch((error) => {
-        console.log("Audio play error:", error);
-        videoPlayer.muted = false;
-        if (audioPlayer) audioPlayer.remove();
-      });
-    }
-  });
-
-  videoPlayer.addEventListener("pause", () => {
-    audioPlayer.pause();
-  });
-
-  videoPlayer.addEventListener("seeked", () => {
-    audioPlayer.currentTime = videoPlayer.currentTime;
-  });
 
   // Set up custom subtitles display
   if (subtitlesTrack) {
@@ -92,15 +59,16 @@ export function playVideo(videoPath, videoTitle, fromUrl = false) {
     });
   }
 
-  if (!fromUrl) {
-    videoPlayer.play();
-  } else {
-    // wait for the video to load, then request a texture update
-    videoPlayer.addEventListener("loadeddata", () => {
-      if (window.requestTextureUpdate) {
-        window.requestTextureUpdate();
-      }
-    });
+  const playPromise = videoPlayer.play();
+  if (playPromise !== undefined) {
+    playPromise
+      .then(() => {
+        console.log("Autoplay started");
+      })
+      .catch((error) => {
+        // Autoplay was prevented
+        console.error("Autoplay prevented:", error);
+      });
   }
 
   // Add event listener for the Escape key to exit video
@@ -114,10 +82,8 @@ export function playVideo(videoPath, videoTitle, fromUrl = false) {
       e.preventDefault(); // Prevent page scrolling
       if (videoPlayer.paused) {
         videoPlayer.play();
-        if (audioPlayer) audioPlayer.play();
       } else {
         videoPlayer.pause();
-        if (audioPlayer) audioPlayer.pause();
       }
     }
   };
@@ -246,11 +212,9 @@ export function updateCustomSubtitles(videoPlayer, subtitlesTrack) {
 export function exitVideo() {
   const videoContainer = document.getElementById("video-container");
   const videoPlayer = document.getElementById("video-player");
-  const audioPlayer = document.getElementById("audio-player");
 
-  // Stop video and audio if they exist
+  // Stop video if it exists
   if (videoPlayer) videoPlayer.pause();
-  if (audioPlayer) audioPlayer.pause();
 
   // Remove the event listener using the stored reference
   if (videoContainer.escapeHandler) {

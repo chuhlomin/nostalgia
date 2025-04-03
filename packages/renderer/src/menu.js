@@ -1,5 +1,6 @@
 import { playVideo, exitVideo } from "./player.js";
 import { toggleFullScreen, updateMenuPath } from "./utils.js";
+import { getPathForFile } from "@app/preload";
 
 // Menu structure
 export const menuStructure = {
@@ -72,48 +73,9 @@ export const menuStructure = {
     header: "------- CHANNELS -------",
     items: [
       {
-        label: "CARTOONS",
-        action: "navigate",
-        target: "cartoons",
-      },
-      {
         label: "BACK",
         action: "navigate",
         target: "main",
-      },
-    ],
-  },
-  cartoons: {
-    header: "------- CARTOONS -------",
-    items: [
-      {
-        label: "Аладдин",
-        action: "play",
-        video: "Аладдин.mp4",
-        audio: "Аладдин_audio.mp4",
-        subtitles: "Аладдин.vtt",
-      },
-      {
-        label: "Команда Гуфи",
-        action: "play",
-        video: "Команда Гуфи.mp4",
-      },
-      {
-        label: "Чёрный плащ",
-        action: "play",
-        video: "Чёрный плащ.mp4",
-        audio: "Чёрный плащ_audio.mp4",
-      },
-      {
-        label: "А может",
-        action: "play",
-        video: "А может.mp4",
-        subtitles: "А может.vtt",
-      },
-      {
-        label: "BACK",
-        action: "navigate",
-        target: "channels",
       },
     ],
   },
@@ -134,6 +96,105 @@ export let menuHistory = {}; // Store selected indices for each menu
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 let fontSize = 24; // Base font size that will be scaled
+
+export async function addFolderToChannels(folderEntry) {
+  const folderName = folderEntry.name;
+  const videos = await scanFolderForVideos(folderEntry);
+
+  // Add new menu section
+  menuStructure[folderName.toLowerCase()] = {
+    header: `------- ${folderName.toUpperCase()} -------`,
+    items: [
+      ...videos.map((video) => ({
+        label: video.name,
+        action: "play",
+        video: video.path,
+      })),
+      {
+        label: "BACK",
+        action: "navigate",
+        target: "channels",
+      },
+    ],
+  };
+
+  // Add folder to channels menu
+  menuStructure.channels.items.splice(-1, 0, {
+    label: folderName,
+    action: "navigate",
+    target: folderName.toLowerCase(),
+  });
+
+  // Refresh the menu
+  renderMenuState(currentMenu);
+}
+
+async function scanFolderForVideos(folderEntry) {
+  const videos = [];
+
+  async function recursiveRead(entry) {
+    if (entry.isFile) {
+      const file = await new Promise((resolve) => entry.file(resolve));
+      if (file.type.startsWith("video/")) {
+        videos.push({
+          name: file.name.replace(/\.[^/.]+$/, ""), // Remove extension
+          path: getPathForFile(file),
+        });
+      }
+    } else if (entry.isDirectory) {
+      const dirReader = entry.createReader();
+      const entries = await new Promise((resolve) => {
+        const results = [];
+        function readEntries() {
+          dirReader.readEntries((entries) => {
+            if (entries.length > 0) {
+              results.push(...entries);
+              readEntries();
+            } else {
+              resolve(results);
+            }
+          });
+        }
+        readEntries();
+      });
+
+      for (const entry of entries) {
+        await recursiveRead(entry);
+      }
+    }
+  }
+
+  await recursiveRead(folderEntry);
+  return videos;
+}
+
+export function addChannelToMenu(channelName, videos) {
+  // Create new menu for the channel
+  menuStructure[channelName.toLowerCase()] = {
+    header: `------- ${channelName.toUpperCase()} -------`,
+    items: [
+      ...videos,
+      {
+        label: "BACK",
+        action: "navigate",
+        target: "channels",
+      },
+    ],
+  };
+
+  // Add channel to channels menu
+  const channelEntry = {
+    label: channelName,
+    action: "navigate",
+    target: channelName.toLowerCase(),
+  };
+
+  // Insert new channel before the BACK button
+  const backButtonIndex = menuStructure.channels.items.findIndex(
+    (item) => item.label === "BACK",
+  );
+  menuStructure.channels.items.splice(backButtonIndex, 0, channelEntry);
+}
 
 export function setupCanvas() {
   canvas.width = window.innerWidth;
@@ -247,7 +308,7 @@ export function handleMenuAction(item, fromUrl = false) {
     case "play":
       // First, make sure to exit any currently playing video
       exitVideo();
-      playVideo(`channels/${currentMenu}/${item.video}`, item.label, fromUrl);
+      playVideo(item.video, item.label, fromUrl);
       break;
     case "none":
       // Do nothing for informational items
